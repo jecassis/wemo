@@ -22,10 +22,17 @@ namespace Wemo
 {
     public class Program
     {
-        private const string ProgramName = "wemo";
+        private const string programName = "Wemo";
+        private const string Soap = @"<?xml version=""1.0"" encoding=""utf-8""?>
+<s:Envelope xmlns:s=""http://schemas.xmlsoap.org/soap/envelope/"" s:encodingStyle=""http://schemas.xmlsoap.org/soap/encoding/"">
+  <s:Body>
+    {0}
+  </s:Body>
+</s:Envelope>";
         private static readonly Regex ipRegex = new Regex(@"\A(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\z");
         private static readonly Regex contentRegex = new Regex(@"<(?:BinaryState|SignalStrength|FriendlyName|DimValue)>([\w ]+?)</");
-        private const int CommandDelay = 1000;
+        private const int commandDelay = 1000;
+
         private enum Function {
             GETSTATE,
             ON,
@@ -42,8 +49,8 @@ namespace Wemo
 
         private static void ShowHelp(OptionSet p)
         {
-            Console.WriteLine(String.Format("Usage: {0} [OPTIONS]", ProgramName));
-            Console.WriteLine("Sends and receives information from Wemo devices.");
+            Console.WriteLine($"Usage: dotnet {programName}.dll [OPTIONS]");
+            Console.WriteLine("Sends commands to Wemo devices.");
             Console.WriteLine();
             Console.WriteLine("Options:");
             p.WriteOptionDescriptions(Console.Out);
@@ -51,12 +58,12 @@ namespace Wemo
 
         private static void ParseOpt(string[] args, List<Function> commands, ref string ip, ref string port, ref string name)
         {
-            bool show_help = false;
-            string ip_temp = null, port_temp = null, name_temp = null;
+            bool showHelp = false;
+            string ipTemp = null, portTemp = null, nameTemp = null;
 
             var p = new OptionSet() {
-                { "h|help",  "Show this message", v => show_help = v != null },
-                { "i|ip=", "Specify the IP address of the target device", v => ip_temp = ipRegex.IsMatch(v) ? v : throw new OptionException("IP address invalid for option '-i'.", "--ip") },
+                { "h|help",  "Show this message", v => showHelp = v != null },
+                { "i|ip=", "IP address of the target device", v => ipTemp = ipRegex.IsMatch(v) ? v : throw new OptionException("IP address invalid for option '-i'.", "--ip") },
                 // Local
                 // 1900 - Advertisement and discovery requests (UPnP).
                 // Xxxx - Discovery response port is up to the requester source port – random
@@ -66,14 +73,13 @@ namespace Wemo
                 // 8443 - HTTPS for web services to cloud
                 // 3478 - Port for TURN server for NAT client
                 // PORTTEST=$(curl -s $IP:49152 | grep "404")
-                // if [ "$PORTTEST" = "" ]
-                // 	then
+                // if [ "$PORTTEST" = "" ] then
                 // 	PORT=49153
                 // else
                 // 	PORT=49152
                 // fi
-                { "p|port=", "Specify the port of the target device", v => port_temp = v },
-                { "c|command=", "Command to send to target device", v => {
+                { "p|port=", "Port of the target device", v => portTemp = v },
+                { "c|command=", "Command(s) to send to target device; possible commands: state, on, off, nl, nlon, nloff, signal, name, change=NAME", v => {
                     if (Regex.Match(v, @"state\z", RegexOptions.IgnoreCase).Success)
                         commands.Add(Function.GETSTATE);
                     else if (Regex.Match(v, @"\Aon\z", RegexOptions.IgnoreCase).Success)
@@ -93,11 +99,11 @@ namespace Wemo
                     else if (Regex.Match(v, @"change", RegexOptions.IgnoreCase).Success) {
                         string[] macro = Regex.Split(v, @"[:=]");
                         if (macro.Length != 2 || macro[1] == null)
-                            throw new OptionException("Missing name for option '-c change=NAME'. Received option '" + v + "'.", "--command");
+                            throw new OptionException($"Missing name for option '-c change=NAME'. Received option '{v}'.", "--command");
                         commands.Add(Function.CHANGEFRIENDLYNAME);
-                        name_temp = macro[1];
+                        nameTemp = macro[1];
                     } else
-                        throw new OptionException("Unrecognized command '" + v + "' for option '-c'.", "--command");
+                        throw new OptionException($"Unrecognized command '{v}' for option '-c'.", "--command");
                 } },
             };
 
@@ -105,27 +111,27 @@ namespace Wemo
                 p.Parse(args);
             } catch (OptionException e) {
                 Console.WriteLine(e.Message);
-                Console.WriteLine("Try `" + ProgramName + " --help' for more information.");
+                Console.WriteLine($"Try `dotnet {programName}.dll --help' for more information.");
                 Environment.Exit(0);
             }
 
-            if (show_help) {
+            if (showHelp) {
                 ShowHelp(p);
                 Environment.Exit(0);
             }
 
-            ip = ip_temp;
-            port = port_temp ?? port;
-            name = name_temp;
+            ip = ipTemp;
+            port = portTemp ?? port;
+            name = nameTemp;
         }
 
-        private static (String, String) SelectFunction(Function function, string name)
+        private static (string, string) SelectFunction(Function function, string name)
         {
-            String urn = "\"urn:Belkin:service:basicevent:1#";
-            String ns = "xmlns:u=\"urn:Belkin:service:basicevent:1\"";
-            String action = "";
-            String argument = "";
-            String value = "";
+            string urn = "urn:Belkin:service:basicevent:1#";
+            string ns = "xmlns:u=\"urn:Belkin:service:basicevent:1\"";
+            string action = "";
+            string argument = "";
+            string value = "";
 
             // http://IP:PORT/setup.xml events available
             // http://IP:PORT/eventservice.xml services available
@@ -172,10 +178,10 @@ namespace Wemo
                     value = name;
                     break;
                 default:
-                    throw new InvalidEnumArgumentException("Unknown command: " + function.ToString());
+                    throw new InvalidEnumArgumentException($"Unknown command: {function.ToString()}");
             }
             
-            return (urn + action + "\"", "<u:" + action + " " + ns + "><" + argument + ">" + value + "</" + argument + "></u:" + action + ">");
+            return ($"\"{urn}{action}\"", $"<u:{action} {ns}><{argument}>{value}</{argument}></u:{action}>");
         }
 
         private static string InterpretResult(Function c, string content)
@@ -206,7 +212,7 @@ namespace Wemo
                 case Function.CHANGEFRIENDLYNAME:
                     break;
                 default:
-                    throw new InvalidEnumArgumentException("Unknown command: " + c.ToString());
+                    throw new InvalidEnumArgumentException($"Unknown command: {c.ToString()}");
             }
 
             return result;
@@ -218,17 +224,12 @@ namespace Wemo
 
             Client.DefaultRequestHeaders.Clear();
             Client.DefaultRequestHeaders.Add("SOAPAction", soapHeader);
-            String soapContent = String.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
-                    <s:Envelope xmlns:s=""http://schemas.xmlsoap.org/soap/envelope/"" s:encodingStyle=""http://schemas.xmlsoap.org/soap/encoding/"">
-                        <s:Body>
-                            {0}
-                        </s:Body>
-                    </s:Envelope>", soapBody);
+            String soapContent = String.Format(Soap, soapBody);
             var response = await Client.PostAsync(url, new StringContent(soapContent, Encoding.UTF8, "text/xml"));
             response.EnsureSuccessStatusCode();
             response.Content.Headers.ContentType.CharSet = "utf-8"; // BUG: https://github.com/dotnet/corefx/issues/5014
             var content = await response.Content.ReadAsStringAsync();
-            Console.WriteLine(String.Format("URL: {0}, Command: {1}, Result: {2}", url, c.ToString(), InterpretResult(c, content)));
+            Console.WriteLine($"URL: {url}, Command: {c.ToString()}, Result: {InterpretResult(c, content)}");
             Debug.WriteLine(content);
         }
 
@@ -238,10 +239,10 @@ namespace Wemo
             string ip = "192.168.1.xxx", port = "49153", changeName = null;
             ParseOpt(args, commands, ref ip, ref port, ref changeName);
 
-            string url = "http://" + ip + ":" + port + "/upnp/control/basicevent1";
+            string url = $"http://{ip}:{port}/upnp/control/basicevent1";
             foreach (Function c in commands) {
                 await SendCommand(url, c, changeName);
-                Thread.Sleep(CommandDelay);
+                Thread.Sleep(commandDelay);
             }
 
             return 0;
