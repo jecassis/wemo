@@ -7,7 +7,7 @@
             "request": "launch",
             "preLaunchTask": "Build Debug",
             "program": "${workspaceFolder}/bin/Debug/netcoreapp2.2/Wemo.dll",
-            "args": [ "-i", "192.168.1.94", "-c", "name", "-c", "signal", "-c", "state", "-c", "nl", "-c", "on" ],
+            "args": [ "-i", "192.168.1.94", "-c", "name", "-c", "signal", "-c", "state", "-c", "nl", "-c", "on" ], // , "-c", "change=boom" ],
             "cwd": "${workspaceFolder}",
             "console": "internalConsole",
             "stopAtEntry": false,
