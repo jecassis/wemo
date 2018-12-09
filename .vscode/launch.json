@@ -2,12 +2,24 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": ".NET Core Launch (console)",
+            "name": "Run Debug",
             "type": "coreclr",
             "request": "launch",
-            "preLaunchTask": "build",
+            "preLaunchTask": "Build Debug",
             "program": "${workspaceFolder}/bin/Debug/netcoreapp2.2/Wemo.dll",
-            "args": [],
+            "args": [ "-i", "192.168.1.94", "-c", "name", "-c", "signal", "-c", "state", "-c", "nl", "-c", "on" ],
+            "cwd": "${workspaceFolder}",
+            "console": "internalConsole",
+            "stopAtEntry": false,
+            "internalConsoleOptions": "openOnSessionStart"
+        },
+        {
+            "name": "Run Release",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "Build Release",
+            "program": "${workspaceFolder}/bin/Release/netcoreapp2.2/Wemo.dll",
+            "args": [ "-i", "192.168.1.94", "-c", "name", "-c", "signal", "-c", "state", "-c", "nl" ],
             "cwd": "${workspaceFolder}",
             "console": "internalConsole",
             "stopAtEntry": false,

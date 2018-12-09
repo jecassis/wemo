@@ -2,18 +2,87 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "build",
+            "label": "Build Debug",
             "command": "dotnet",
             "type": "shell",
             "group": "build",
             "args": [
                 "build",
-                "/property:GenerateFullPaths=true"
+                "${workspaceRoot}/Wemo.csproj",
+                "/property:GenerateFullPaths=true",
+                "-c",
+                "Debug"
             ],
             "presentation": {
                 "reveal": "silent"
             },
             "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "Build Release",
+            "command": "dotnet",
+            "type": "shell",
+            "group": "build",
+            "args": [
+                "build",
+                "${workspaceRoot}/Wemo.csproj",
+                "-c",
+                "Release"
+            ],
+            "presentation": {
+                "reveal": "silent"
+            },
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "Clean Debug",
+            "command": "dotnet",
+            "type": "shell",
+            "group": "build",
+            "args": [
+                "clean",
+                "-c",
+                "Debug"
+            ],
+            "presentation": {
+                "reveal": "silent"
+            },
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "Clean Release",
+            "command": "dotnet",
+            "type": "shell",
+            "group": "build",
+            "args": [
+                "clean",
+                "-c",
+                "Release"
+            ],
+            "presentation": {
+                "reveal": "silent"
+            },
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "Build All",
+            "dependsOn": [
+                "Build Debug",
+                "Build Release"
+            ],
+            "problemMatcher": [
+                "$msCompile"
+            ]
+        },
+        {
+            "label": "Clean All",
+            "dependsOn": [
+                "Clean Debug",
+                "Clean Release"
+            ],
+            "problemMatcher": [
+                "$msCompile"
+            ]
         }
     ]
 }
