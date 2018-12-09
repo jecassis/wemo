@@ -10,15 +10,20 @@ Clone the repository:
 > git clone https://github.com/jecassis/wemo.git
 > cd wemo
 ```
-Generate `launch.json` and `tasks.json` using:
+Generate `launch.json` and `tasks.json` for Visual Studio Code (already in repository) using:
 ```powershell
 > dotnet new console
 ```
-Alternatively, in GUI menu: View -> Command Palette... -> .NET: Generate Assets for Build and Debug
+Alternatively, from the GUI menu: View -> Command Palette... -> .NET: Generate Assets for Build and Debug
 
 Build a debug configuration:
 ```powershell
 > dotnet build
+```
+
+To build and run:
+```powershell
+> dotnet run
 ```
 
 To clean the repository of build artifacts:
